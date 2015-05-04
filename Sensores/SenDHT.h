@@ -1,8 +1,12 @@
+// SenDHT.h
+
 #include <dht.h>
 
 class SenDHT 
 {
+ 
   private:
+  
     int   pin;
     float temp;
     float hum;
