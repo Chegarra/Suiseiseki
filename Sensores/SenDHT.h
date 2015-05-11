@@ -1,4 +1,4 @@
-class SenDHT : public Sensor 
+class SenDHT
 {
  
   private:

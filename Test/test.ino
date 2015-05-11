@@ -96,7 +96,7 @@ void obtenerDatoLuminosidad() {
 }
 
 void obtenerDatosTempHum() {
-  int chk = DHT.read22((DHT22_PIN);
+  int chk = DHT.read22((DHT22_PIN));
   switch (chk) {
     case DHTLIB_OK:
       humedadActual = DHT.humidity;
