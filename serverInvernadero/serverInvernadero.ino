@@ -3,6 +3,8 @@
 #include <Ethernet.h>
 #include <LiquidCrystal.h>
 #include <dht.h> // Temperatura
+#include <Wire.h>   // Comunicación I2C
+#include "RTClib.h" // Reloj RTC I2C
 
 // DEFINICIÓN DE PINS CONECTADOS
 #define senTemp1 24    // Sensor DHT 1
@@ -25,14 +27,17 @@
 */
 
 // CONSTANTES DE HUMBRALES
-const float T_MIN = 10.00;
-const float T_MAX = 24.00;
+const float T_MIN = 15.00;
+const float T_MAX = 27.00;
 
 const float H_MIN = 30.00;
-const float H_MAX = 70.00;
+const float H_MAX = 50.00;
 
+//  CONSTANTES DE RIEGO
+  // Fecha de Control
 
-dht DHT;
+const int HH = 00;
+const int MM = 15;
 
   // TEMPERATURA
 struct TEMP
@@ -59,30 +64,39 @@ int lumMin;
 } lum1 = {0,0,100};
 
 
-  //Estados
+// VARIABLES
+  // Estados
 boolean estadoRele1 = false;
 boolean estadoRele2 = false;
 boolean estadoSensor = true;
 boolean estadoT = true;
 boolean estadoH = true;
+boolean programado = true;
+boolean alertaTemp = false;
+boolean alertaHum = false;
+boolean modoManual = false;
+  // 
 
-  // ETHERNET (MAC, IP y PUERTO)
+dht DHT;
+RTC_DS1307 RTC;
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
 byte mac[] = {0xFA, 0x15, 0xAD, 0x15, 0xCF, 0x07};
 IPAddress ip(192, 168, 1, 177); //CASA
 //IPAddress ip(158, 42, 181, 60); //CLASE
 EthernetServer server(80);
 
-  // LCD
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
-void setup() {
-  // Open serial communications and wait for port to open:
-  Serial.begin(9600);
- 
-  // start the Ethernet connection and the server:
-  Ethernet.begin(mac, ip);
-  server.begin();
+void setup() 
+{
+  Wire.begin();
+  RTC.begin();
+  //RTC.adjust(DateTime(__DATE__, __TIME__));
   
+  Serial.begin(9600);
+  
+  Ethernet.begin(mac, ip);
+  server.begin();   
   Serial.println("server is at " + Ethernet.localIP());
   
   pinMode(rele1, OUTPUT);
@@ -97,7 +111,44 @@ void setup() {
   lcd.begin(16, 2);
 }
 
-void obtenerDatosLuz(int sensor, struct LUM *l) {
+void resetearValoresLum(struct LUM *l)
+{
+  l->lumMax = 0.0;
+  l->lumMin = 100.00;
+}
+
+void resetearValoresTemp(struct TEMP *t)
+{
+  t->temperaturaMax = 0.0;
+  t->temperaturaMin = 100.00;
+}
+
+void resetearValoresHum(struct HUM *h)
+{
+  h->humedadMax = 0.0;
+  h->humedadMin = 100.00;
+}
+
+boolean comprobarUmbralTemp (struct TEMP *t1, struct TEMP *t2, int margen)
+{
+  if ((t1->temperaturaActual + t2->temperaturaActual) / 2.0 > (T_MAX - margen))
+  {
+    return true;
+  }  
+  return false;
+}
+
+boolean comprobarUmbralHum (struct HUM *h1, struct HUM *h2, int margen)
+{
+  if ((h1->humedadActual + h2->humedadActual) / 2.0 < (H_MIN + margen) )
+  {
+    return true;
+  }  
+  return false;
+}
+
+void obtenerDatosLuz(int sensor, struct LUM *l) 
+{
   l->lumActual = analogRead(sensor);
   
   if (l->lumActual < l->lumMin)
@@ -208,6 +259,7 @@ void estadoSistema(int rojo, int amarillo, int verde)
 }
 
 void loop() {
+  DateTime now = RTC.now(); // Obtiene la fecha y hora del RTC
   
   obtenerDatosDHT(senTemp1, &temp1, &hum1);
   obtenerDatosDHT(senTemp2, &temp2, &hum2);
@@ -221,22 +273,54 @@ void loop() {
   lcd.print("T2: " + String(temp2.temperaturaActual));
   // listen for incoming clients
   
-  /*
-  SI  Son las 8.00AM
-    -> Resetear MAX y MIN de los sensores
-  SI  La hora es 
-  SI  Temperatura supera el Maximo Permitido:
-    -> Conectar Ventilador
-  SI  Temperatura disminuye 2 grados del Maximo Permitido
-    -> Desconectar Ventilador
-  SI  Humedad esta por debajo del Minimo Permitido
-    -> Conectar Riego
-  SI  Humedad sube 5 puntos porcentuales desconectar riego
-  
-  
-  */
-  
-  
+ // A LAS 8 DE LA MAÑANA REINICIA VALORES MAX Y MIN 
+  if(now.hour() == HH && now.minute() == MM)
+  {
+    // RESETEAR MAXIMO Y MINIMO
+    if (programado)
+    {
+    resetearValoresLum(&lum1);
+    resetearValoresTemp(&temp1);
+    resetearValoresTemp(&temp2);
+    resetearValoresHum(&hum1);
+    resetearValoresHum(&hum2);
+    
+    programado = false;
+    }
+    
+  }
+  if (modoManual)
+  {
+      // SI LA TEMPERATURA ES MAYOR QUE EL UMBRAL PERMITIDO
+      if (comprobarUmbralTemp(&temp1, &temp2, 0) && !alertaTemp)
+      {
+        digitalWrite(rele2, HIGH);
+        estadoRele2 = true;
+        alertaTemp = true;
+      }
+      // HASTA QUE LA TEMPERATURA NO BAJE DEL UMBRAL + MARGEN RIEGO CONECTADO
+      if (!comprobarUmbralTemp(&temp1, &temp2, 3) && alertaTemp)
+      {
+        digitalWrite(rele2, LOW);
+        estadoRele2 = false;
+        alertaTemp = false;
+      }
+      
+        // SI LA TEMPERATURA ES MAYOR QUE EL UMBRAL PERMITIDO
+      if (comprobarUmbralHum(&hum1, &hum2, 0) && !alertaHum)
+      {
+        digitalWrite(rele1, HIGH);
+        estadoRele1 = true;
+        alertaHum = true;
+      }
+      // HASTA QUE LA TEMPERATURA NO BAJE DEL UMBRAL + MARGEN RIEGO CONECTADO
+      if (!comprobarUmbralHum(&hum1, &hum2, 5) && alertaHum)
+      {
+        digitalWrite(rele1, LOW);
+        estadoRele1 = false;
+        alertaHum = false;
+      }
+   }
   
   EthernetClient client = server.available();
   
@@ -270,9 +354,12 @@ void loop() {
               if (mensaje.indexOf("/on") != -1) {
                 digitalWrite(rele1, HIGH);
                 estadoRele1 = true;
+                modoManual  =true;
               } else if (mensaje.indexOf("/off") != -1) {
                 digitalWrite(rele1, LOW);
                 estadoRele1 = false;
+                if (!estadoRele2)
+                  modoManual = false;
               } 
               
               client.print("{\"rele1\":");
@@ -287,9 +374,12 @@ void loop() {
               if (mensaje.indexOf("/on") != -1) {
                 digitalWrite(rele2, HIGH);
                 estadoRele2 = true;
+                modoManual=true;
               } else if (mensaje.indexOf("/off") != -1) {
                 digitalWrite(rele2, LOW);
                 estadoRele2 = false;
+                if (!estadoRele1)
+                  modoManual = false;
               }
               
               client.print("{\"rele2\":");
@@ -357,7 +447,96 @@ void loop() {
                   client.print(hum1.humedadMin);
                   client.println("}}");                         
             }
-          } else {
+          }
+         else if (mensaje.indexOf("/time") != -1)
+         {
+           if (mensaje.indexOf("/set") != -1) 
+           {
+            RTC.adjust(DateTime(__DATE__, __TIME__));
+            delay(1000);
+
+           }
+            client.print("{\"time\": {");
+            client.print("\"Fecha\":");
+            client.print(now.year(), DEC); // Año
+            client.print('/');
+            client.print(now.month(), DEC); // Mes
+            client.print('/');
+            client.print(now.day(), DEC); // Dia
+            client.print(",");
+            client.print("\"Hora\":");
+            client.print(now.hour(), DEC); // Horas
+            client.print(':');
+            client.print(now.minute(), DEC); // Minutos
+            client.print(':');
+            client.print(now.second(), DEC); // Segundos
+            client.println("}}"); 
+          }
+          else if (mensaje.indexOf("/status") != -1)
+         {
+            client.println("TEMPERATURA Y HUMEDAD ACTUAL");
+            client.println("Temp1: " + (String) temp1.temperaturaActual + " :: Hum1: " + (String) hum1.humedadActual);
+            client.println("Temp2: " + (String) temp2.temperaturaActual + " :: Hum2: " + (String) hum2.humedadActual);
+            client.println();
+            client.println("ESTADO DE LOS RELES");
+            client.print("Rele1: ");
+            if(estadoRele1)
+              client.println("Encendido");
+            else
+              client.println("Apagado");
+            
+            client.print("Rele2: ");
+            if(estadoRele2)
+              client.println("Encendido");
+            else
+              client.println("Apagado");
+            
+           client.println();
+           client.println("ESTADOS DE CONTROL");
+           
+           client.print("Estado del Sensor General: ");
+           if(estadoSensor)
+             client.println("OK");
+           else
+             client.println("FALLO");
+
+           client.print("Estado del Sensor Temperatura: ");
+           if(estadoT)
+             client.println("OK");
+           else
+             client.println("FALLO");
+           
+           client.print("Estado del Sensor Humedad: ");
+           if(estadoH)
+             client.println("OK");
+           else
+             client.println("FALLO");
+           
+           client.print("Estado Automatico: ");
+           if(programado)
+             client.println("Activo");
+           else
+             client.println("Inactivo");
+                      
+           client.print("Alerta Temperatura: ");
+           if(alertaTemp)
+             client.println("Activo");
+           else
+             client.println("Inactivo");
+             
+           client.print("Alerta Humedad: ");
+           if(alertaHum)
+             client.println("Activo");
+           else
+             client.println("Inactivo");
+           
+           client.print("Modo Manual: ");
+           if(modoManual)
+             client.println("Activo");
+           else
+             client.println("Inactivo");
+          } 
+          else {
             client.print("{\"error\": \"ruta incorrecta\"}");
           }
           break;
