@@ -11,15 +11,16 @@
 #define senTemp2 25    // Sensor DHT 2
 #define senLum A8      // Fotoresistencia 1
 #define rele1 32       // Rele 1 control de Ventilador
-#define rele2 33       // Rele 2 control de Riego
+#define rele2 33       // Rele 2 control de Riego  
 #define led1 40        // Led Rojo
 #define led2 41        // Led Amarillo
 #define led3 42        // Led Verde
+#define buzz 50
 /*
 #define senTemp1 34
 #define senTemp2 35
 #define senLum A9
-#define rele1 30
+#define   rele1 30
 #define rele2 32
 #define led1 36
 #define led2 38
@@ -36,8 +37,8 @@ const float H_MAX = 50.00;
 //  CONSTANTES DE RIEGO
   // Fecha de Control
 
-const int HH = 00;
-const int MM = 15;
+const int HH = 11;
+const int MM = 45;
 
   // TEMPERATURA
 struct TEMP
@@ -82,8 +83,8 @@ RTC_DS1307 RTC;
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 byte mac[] = {0xFA, 0x15, 0xAD, 0x15, 0xCF, 0x07};
-IPAddress ip(192, 168, 1, 177); //CASA
-//IPAddress ip(158, 42, 181, 60); //CLASE
+//IPAddress ip(192, 168, 1, 177); //CASA
+IPAddress ip(158, 42, 181, 60); //CLASE
 EthernetServer server(80);
 
 
@@ -107,6 +108,7 @@ void setup()
   pinMode(led1,OUTPUT);
   pinMode(led2,OUTPUT);
   pinMode(led3,OUTPUT);
+  digitalWrite(buzz, LOW);
   
   lcd.begin(16, 2);
 }
@@ -114,7 +116,7 @@ void setup()
 void resetearValoresLum(struct LUM *l)
 {
   l->lumMax = 0.0;
-  l->lumMin = 100.00;
+  l->lumMin = 1000.00;
 }
 
 void resetearValoresTemp(struct TEMP *t)
@@ -166,7 +168,7 @@ void obtenerDatosDHT(int sensor, struct TEMP *t, struct HUM *h )
   int chk = DHT.read11(sensor);
   //int chk = DHT.read22(&sensor);
   
-  switch (chk) 
+  switch (chk)
   {
     case DHTLIB_OK:
       t->temperaturaActual = DHT.temperature;
@@ -268,9 +270,9 @@ void loop() {
   estadoSistema(led1,led2,led3);
   
   lcd.setCursor(0,0);
-  lcd.print("T1: " + String(temp1.temperaturaActual));
+  lcd.print("Temp: " + String((temp1.temperaturaActual + temp2.temperaturaActual) / 2.0));
   lcd.setCursor(0,1);
-  lcd.print("T2: " + String(temp2.temperaturaActual));
+  lcd.print("Hum : " + String((hum1.humedadActual + hum2.humedadActual) / 2.0 ));
   // listen for incoming clients
   
  // A LAS 8 DE LA MAÑANA REINICIA VALORES MAX Y MIN 
@@ -289,35 +291,39 @@ void loop() {
     }
     
   }
-  if (modoManual)
+  else {
+    programado = true;
+  }
+  
+  if (!modoManual)
   {
       // SI LA TEMPERATURA ES MAYOR QUE EL UMBRAL PERMITIDO
       if (comprobarUmbralTemp(&temp1, &temp2, 0) && !alertaTemp)
       {
-        digitalWrite(rele2, HIGH);
-        estadoRele2 = true;
+        digitalWrite(rele1, HIGH);
+        estadoRele1 = true;
         alertaTemp = true;
       }
       // HASTA QUE LA TEMPERATURA NO BAJE DEL UMBRAL + MARGEN RIEGO CONECTADO
       if (!comprobarUmbralTemp(&temp1, &temp2, 3) && alertaTemp)
       {
-        digitalWrite(rele2, LOW);
-        estadoRele2 = false;
+        digitalWrite(rele1, LOW);
+        estadoRele1 = false;
         alertaTemp = false;
       }
       
         // SI LA TEMPERATURA ES MAYOR QUE EL UMBRAL PERMITIDO
       if (comprobarUmbralHum(&hum1, &hum2, 0) && !alertaHum)
       {
-        digitalWrite(rele1, HIGH);
-        estadoRele1 = true;
+        digitalWrite(rele2, HIGH);
+        estadoRele2 = true;
         alertaHum = true;
       }
       // HASTA QUE LA TEMPERATURA NO BAJE DEL UMBRAL + MARGEN RIEGO CONECTADO
       if (!comprobarUmbralHum(&hum1, &hum2, 5) && alertaHum)
       {
-        digitalWrite(rele1, LOW);
-        estadoRele1 = false;
+        digitalWrite(rele2, LOW);
+        estadoRele2 = false;
         alertaHum = false;
       }
    }
@@ -359,7 +365,11 @@ void loop() {
                 digitalWrite(rele1, LOW);
                 estadoRele1 = false;
                 if (!estadoRele2)
+                {
                   modoManual = false;
+                  alertaHum = false;
+                  alertaTemp = false;
+                }
               } 
               
               client.print("{\"rele1\":");
@@ -379,7 +389,11 @@ void loop() {
                 digitalWrite(rele2, LOW);
                 estadoRele2 = false;
                 if (!estadoRele1)
+                {
                   modoManual = false;
+                  alertaHum = false;
+                  alertaTemp = false;
+                }
               }
               
               client.print("{\"rele2\":");
@@ -448,6 +462,10 @@ void loop() {
                   client.println("}}");                         
             }
           }
+         else if (mensaje.indexOf("/panic") != -1)
+         {
+           
+         }
          else if (mensaje.indexOf("/time") != -1)
          {
            if (mensaje.indexOf("/set") != -1) 
@@ -479,13 +497,13 @@ void loop() {
             client.println("Temp2: " + (String) temp2.temperaturaActual + " :: Hum2: " + (String) hum2.humedadActual);
             client.println();
             client.println("ESTADO DE LOS RELES");
-            client.print("Rele1: ");
+            client.print("Ventilacion: ");
             if(estadoRele1)
               client.println("Encendido");
             else
               client.println("Apagado");
             
-            client.print("Rele2: ");
+            client.print("Riego: ");
             if(estadoRele2)
               client.println("Encendido");
             else
