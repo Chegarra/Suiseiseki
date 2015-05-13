@@ -1,0 +1,421 @@
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>Proyecto - Monitorizacion Invernadero</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+	<link href="css/bootstrap-switch.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+	<script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+	
+	<script src="js/bootstrap-switch.js"></script>
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript">
+	google.load("visualization", "1", {packages:["gauge"]});
+	google.setOnLoadCallback(drawChart);
+	
+	var dataTemp;
+	var optionsTemp;
+	var chartTemp;
+	
+	var dataHum;
+	var optionsHum;
+	var chartHum;
+	
+	var dataLum;
+	var optionsLum;
+	var chartLum;
+	
+	function drawChart() {
+		dataTemp = google.visualization.arrayToDataTable([
+		  ['Label', 'Value'],
+		  ['Zona 1', 0],
+		  ['Zona 2', 0]
+		]);
+
+		optionsTemp = {
+		  width: 380, height: 200,
+		  min:-20, max:60,
+		  greenFrom:0, greenTo:20,
+		  yellowFrom:20, yellowTo: 36,
+		  redFrom: 36, redTo: 60,
+		  minorTicks: 5
+		};
+		
+		chartTemp = new google.visualization.Gauge(document.getElementById('contenedorTemp'));
+		chartTemp.draw(dataTemp, optionsTemp);
+	
+		dataHum = google.visualization.arrayToDataTable([
+		  ['Label', 'Value'],
+		  ['Zona 1', 0],
+		  ['Zona 2', 0]
+		]);
+
+		optionsHum = {
+		  width: 380, height: 200,
+		  min:0, max:100,
+		  greenFrom:20, greenTo:70,
+		  yellowFrom:70, yellowTo: 100,
+		  redFrom: 0, redTo: 20,
+		  minorTicks: 5
+		};
+
+		chartHum = new google.visualization.Gauge(document.getElementById('contenedorHum'));
+		chartHum.draw(dataHum, optionsHum);
+		
+		dataLum = google.visualization.arrayToDataTable([
+		  ['Label', 'Value'],
+		  ['Zona 1', 0],
+		  ['Zona 2', 0]
+		]);
+
+		optionsLum = {
+		  width: 380, height: 200,
+		  min:0, max:100,
+		  minorTicks: 5
+		};
+		
+		chartLum = new google.visualization.Gauge(document.getElementById('contenedorLum'));
+		chartLum.draw(dataLum, optionsLum);
+		
+	}	
+	
+	setInterval(function() {
+		recogerDatos('/sensores/temp1');
+	}, 20000);
+	
+	setInterval(function() {
+		recogerDatos('/sensores/temp2');
+	}, 21000);
+		
+	setInterval(function() {
+		recogerDatos('/sensores/hum1');
+	}, 22000);
+	
+	setInterval(function() {
+		recogerDatos('/sensores/hum2');
+	}, 23000);
+	
+	setInterval(function() {
+		recogerDatos('/sensores/lum1');
+	}, 24000);
+	
+	setInterval(function() {
+		recogerDatos('/reles/rele1');
+	}, 25000);
+	
+	setInterval(function() {
+		recogerDatos('/reles/rele2');
+	}, 26000);
+	
+	setInterval(function() {
+		recogerDatos('/time');
+	}, 27000);
+	
+    </script>
+</head>
+
+<body>
+
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+			<a class="navbar-brand" href="#">Monitorizacion Del Invernadero</a>
+        </div>
+      </div>
+    </nav>
+	
+	<div class="container" style="margin-top:5%;">
+	
+		<p>	<strong>Proyecto de DIP realizado por: </strong><br>
+			Antonio Sancho Barberan<br>
+			Jose Maria Segarra Orenga
+		</p>
+	
+		<div class="row">
+			<div class="col-md-4 ">
+				<h2>Sensores Temperatura</h2>
+				<div id="contenedorTemp" style="width: 380px; height: 200px;"></div>
+			</div>
+			<div class="col-md-4">
+				<h2>Sensores Humedad</h2>
+				<div id="contenedorHum" style="width: 380px; height: 200px;"></div>
+			</div>
+			<div class="col-md-4 ">
+				<h2>Sensores Luminosidad</h2>
+				<div id="contenedorLum" style="width: 380px; height: 200px;"></div>
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="col-md-2 text-center">
+				<p><span class="label label-warning">Maxima:</span> <span class="label label-warning temMax1">0</span> <br>
+				<span class="label label-primary">Minima:</span> <span class="label label-primary temMin1">0</span></p>
+			</div>
+			<div class="col-md-2 text-center">
+				<p><span class="label label-warning">Maxima:</span> <span class="label label-warning temMax2">0</span> <br>
+				<span class="label label-primary">Minima:</span> <span class="label label-primary temMin2">0</span></p>
+			</div>
+			<div class="col-md-2 text-center">
+				<p><span class="label label-warning">Maxima:</span> <span class="label label-warning humMax1">0</span> <br>
+				<span class="label label-primary">Minima:</span> <span class="label label-primary humMin1">0</span></p>
+			</div>
+			<div class="col-md-2 text-center">
+				<p><span class="label label-warning">Maxima:</span> <span class="label label-warning humMax2">0</span> <br>
+				<span class="label label-primary">Minima:</span> <span class="label label-primary humMin2">0</span></p>
+			</div>
+			<div class="col-md-2 text-center">
+				<p><span class="label label-warning">Maxima:</span> <span class="label label-warning lumMax1">0</span> <br>
+				<span class="label label-primary">Minima:</span> <span class="label label-primary lumMin1">0</span></p>
+			</div>
+			<div class="col-md-2 text-center">
+				<p><span class="label label-warning">Maxima:</span> <span class="label label-warning lumMax2">0</span> <br>
+				<span class="label label-primary">Minima:</span> <span class="label label-primary lumMin2">0</span></p>
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="col-md-4 text-center">
+				<h2>Estado Dispositivos</h2>
+				<p>Control manual: <span class="label label-danger" id="estadoControlManual">Apagado</span></p>
+				<p>Ventilación: <span class="label label-danger" id="estadoVentilacion">Apagado</span></p>
+				<p>Riego: <span class="label label-danger" id="estadoRiego">Apagado</span></p>
+			</div>
+			<div class="col-md-4 text-center">
+				<h2>Control Dispositivos</h2>
+				<p>Control manual: <input type="checkbox" name="botonControlManual" id="botonControlManual"></p>
+				<p>Ventilación: <input type="checkbox" name="botonVentilacion" id="botonVentilacion"></p>
+				<p>Riego: <input type="checkbox" name="botonRiego" id="botonRiego"></p>
+			</div>
+			<div class="col-md-4 text-center">
+				<h2>Hora del Sistema</h2>
+				<p>Fecha actual: <span class="label label-info fechaSistema">13-05-2015</span></p>
+				<p>Hora actual: <span class="label label-info horaSistema">16:54</span></p>
+				<button class="btn btn-default ponerHoraSistema">Poner en hora</button>
+			</div>
+		</div>
+		
+		<div id="resultados"></div>
+	
+<script type="text/javascript">
+var estadoControlManual = false;
+
+function realizarAccion(mensaje) {
+	console.log(mensaje);
+	var posini = mensaje.indexOf("\r\n");
+	while (posini >= 0) {
+		mensaje = mensaje.replace("\r\n","");
+		posini = mensaje.indexOf("\r\n");
+	}
+	
+	if (mensaje != null && mensaje != undefined) {
+		var objMensaje = JSON.parse(mensaje);
+		//TEMPERATURA 1
+		var sensor = objMensaje.sensorTemp1;
+		if (sensor != null && sensor != undefined) {
+			dataTemp.setValue(0, 1, sensor.tempActual);
+			chartTemp.draw(dataTemp, optionsTemp);
+			$(".temMax1").text(sensor.tempMax);
+			$(".temMin1").text(sensor.tempMin);
+			return;
+		}
+		//TEMPERATURA 2
+		sensor = objMensaje.sensorTemp2;
+		if (sensor != null && sensor != undefined) {
+			dataTemp.setValue(1, 1, sensor.tempActual);
+			chartTemp.draw(dataTemp, optionsTemp);
+			$(".temMax2").text(sensor.tempMax);
+			$(".temMin2").text(sensor.tempMin);
+			return;
+		}
+		//HUMEDAD 1
+		sensor = objMensaje.sensorHum1;
+		if (sensor != null && sensor != undefined) {
+			dataHum.setValue(0, 1, sensor.humActual);
+			chartHum.draw(dataHum, optionsHum);
+			$(".humMax1").text(sensor.humMax);
+			$(".humMin1").text(sensor.humMin);
+			return;
+		}
+		//HUMEDAD 2
+		sensor = objMensaje.sensorHum2;
+		if (sensor != null && sensor != undefined) {
+			dataHum.setValue(1, 1, sensor.humActual);
+			chartHum.draw(dataHum, optionsHum);
+			$(".humMax2").text(sensor.humMax);
+			$(".humMin2").text(sensor.humMin);
+			return;
+		}
+		//LUMINOSIDAD 1
+		sensor = objMensaje.sensorLum1;
+		if (sensor != null && sensor != undefined) {
+			var valorMaximoSensorLum = 1000;
+			var valorLumActual = sensor.lumActual * 100 / valorMaximoSensorLum;
+			dataLum.setValue(0, 1, valorLumActual);
+			chartLum.draw(dataLum, optionsLum);
+			$(".lumMax1").text(sensor.lumMax);
+			$(".lumMin1").text(sensor.lumMin);
+			return;
+		}
+		//RELE 1 Ventilacion
+		var rele = objMensaje.rele1;
+		if (rele != null && rele != undefined) {
+			var etqEstado = $("#estadoVentilacion");
+			etqEstado.removeClass("label-success");
+			etqEstado.removeClass("label-danger");
+			$("[name='botonVentilacion']").bootstrapSwitch('disabled', false);
+			if (rele == "OFF") {
+				etqEstado.addClass("label-danger");
+				etqEstado.text("Apagado");
+				$("[name='botonVentilacion']").bootstrapSwitch('state', false, false);
+			} else if (rele == "ON") {
+				etqEstado.addClass("label-success");
+				etqEstado.text("Activo");
+				$("[name='botonVentilacion']").bootstrapSwitch('state', true, true);
+			}
+			
+			if (estadoControlManual) {
+				$("[name='botonVentilacion']").bootstrapSwitch('disabled', false);	
+			} else {
+				$("[name='botonVentilacion']").bootstrapSwitch('disabled', true);
+			}
+			return;
+		}
+		//RELE 2 Riego
+		rele = objMensaje.rele2;
+		if (rele != null && rele != undefined) {
+			var etqEstado = $("#estadoRiego");
+			etqEstado.removeClass("label-success");
+			etqEstado.removeClass("label-danger");
+			$("[name='botonRiego']").bootstrapSwitch('disabled', false);
+			if (rele == "OFF") {
+				etqEstado.addClass("label-danger");
+				etqEstado.text("Apagado");
+				$("[name='botonRiego']").bootstrapSwitch('state', false, false);
+			} else if (rele == "ON") {
+				etqEstado.addClass("label-success");
+				etqEstado.text("Activo");
+				$("[name='botonRiego']").bootstrapSwitch('state', true, true);
+			}
+			
+			if (estadoControlManual) {
+				$("[name='botonRiego']").bootstrapSwitch('disabled', false);	
+			} else {
+				$("[name='botonRiego']").bootstrapSwitch('disabled', true);
+			}
+			return;
+		}
+		//CONTROL MANUAL
+		var controlManual = objMensaje.controlmanual;
+		if (controlManual != null && controlManual != undefined) {
+			var etqEstadoControlManual = $("#estadoControlManual");
+			etqEstadoControlManual.removeClass("label-success");
+			etqEstadoControlManual.removeClass("label-danger");
+			if (controlManual == "OFF") {
+				estadoControlManual = false;
+				etqEstadoControlManual.addClass("label-danger");
+				etqEstadoControlManual.text("Apagado");
+				//$('input[name="botonRiego"]').bootstrapSwitch('state', false, false);
+				$("[name='botonVentilacion']").bootstrapSwitch('disabled', true);
+				$("[name='botonRiego']").bootstrapSwitch('disabled', true);
+			} else if (controlManual == "ON") {
+				estadoControlManual = true;
+				etqEstadoControlManual.addClass("label-success");
+				etqEstadoControlManual.text("Activo");
+				//$('input[name="botonRiego"]').bootstrapSwitch('state', true, true);
+				$("[name='botonVentilacion']").bootstrapSwitch('disabled', false);
+				$("[name='botonRiego']").bootstrapSwitch('disabled', false);
+			}
+			return;
+		}
+		
+		//HORA SISTEMA
+		var fechaHoraSistema = objMensaje.time;
+		if (fechaHoraSistema != null && fechaHoraSistema != undefined) {
+			var etqHoraSistema = $(".horaSistema");
+			var etqFechaSistema = $(".fechaSistema");
+			console.log(fechaHoraSistema.hora);
+			etqHoraSistema.text(fechaHoraSistema.hora);
+			etqFechaSistema.text(fechaHoraSistema.fecha);
+		}
+	}
+}
+
+function recogerDatos(ruta) {
+	$.ajax({
+		url : 'proxy.php',
+		data : { path : ruta }, // la información a enviar
+		type : 'GET', // especifica petición POST o GET
+		//dataType : 'json', //tipo de información que se espera de respuesta
+	 
+		// código si petición satisfactoria;
+		success : function(json) {
+			if (json != "" && json != "\r\n") {
+				console.log(json);
+				realizarAccion(json);
+			}
+		},
+	 
+		// código si petición falla;
+		error : function(xhr, status) {
+			console.log('Disculpe, hubo un problema: ' + status);
+		},
+	 
+		// código que se ejecuta siempre
+		complete : function(xhr, status) {
+			console.log('Peticion realizada');
+		}
+	});
+}
+
+$(document).ready(function(){
+			
+	$("[name='botonControlManual']").bootstrapSwitch('state', false, false);
+	
+	$("[name='botonVentilacion']").bootstrapSwitch('state', false, false);
+	$("[name='botonVentilacion']").bootstrapSwitch('disabled', true);
+	
+	$("[name='botonRiego']").bootstrapSwitch('state', false, false);
+	$("[name='botonRiego']").bootstrapSwitch('disabled', true);
+	
+	$('input[name="botonVentilacion"]').on('switchChange.bootstrapSwitch', function(event, estado) {
+		if (estado) {
+			recogerDatos('/reles/rele1/on');
+		} else {
+			recogerDatos('/reles/rele1/off');
+		}
+	});
+	
+	$('input[name="botonRiego"]').on('switchChange.bootstrapSwitch', function(event, estado) {
+		if (estado) {
+			recogerDatos('/reles/rele2/on');
+		} else {
+			recogerDatos('/reles/rele2/off');
+		}
+	});
+	
+	$('input[name="botonControlManual"]').on('switchChange.bootstrapSwitch', function(event, estado) {
+		if (estado) {
+			//recogerDatos('/controlmanual/on');
+			recogerDatos('/config/manual/on');
+		} else {
+			recogerDatos('/config/manual/off');
+			//recogerDatos('/controlmanual/off');
+		}
+	});
+	
+	$(".ponerHoraSistema").click(function() {
+		var f = new Date();
+		var fecha = "" +  f.getFullYear().toString() + (f.getMonth().toString() + 1) + f.getDate().toString() + f.getHours().toString() + f.getMinutes().toString() + f.getSeconds().toString();
+		//var fecha = (f.getMonth() + 1) + " " + f.getDate()  + " " +  f.getFullYear() + "#" + f.getHours() + ":" + f.getMinutes() + ":" + f.getSeconds();
+		recogerDatos('/time/set/' + fecha);
+	});
+	
+});
+
+</script>
+
+	</div>
+
+</body>
+</html>

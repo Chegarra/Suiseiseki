@@ -16,16 +16,7 @@
 #define led2 41        // Led Amarillo
 #define led3 42        // Led Verde
 #define buzz 50
-/*
-#define senTemp1 34
-#define senTemp2 35
-#define senLum A9
-#define   rele1 30
-#define rele2 32
-#define led1 36
-#define led2 38
-#define led3 40
-*/
+
 
 // CONSTANTES DE HUMBRALES
 const float T_MIN = 15.00;
@@ -83,8 +74,8 @@ RTC_DS1307 RTC;
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 byte mac[] = {0xFA, 0x15, 0xAD, 0x15, 0xCF, 0x07};
-//IPAddress ip(192, 168, 1, 177); //CASA
-IPAddress ip(158, 42, 181, 60); //CLASE
+IPAddress ip(192, 168, 1, 177); //CASA
+//IPAddress ip(158, 42, 181, 60); //CLASE
 EthernetServer server(80);
 
 
@@ -268,19 +259,26 @@ void estadoManual(boolean estado)
     modoManual = false;
     alertaTemp = false;
     alertaHum = false;
+    estadoRele(rele1,&estadoRele1,false);
+    estadoRele(rele2,&estadoRele2,false);
   }  
 }
 
-void estadoRele(int rele, boolean estadoRele, boolean estado)
+boolean getEstadoManual()
+{
+  return modoManual;
+}
+
+void estadoRele(int rele, boolean *estadoRele, boolean estado)
 {
   if (estado)
   {
-    estadoRele = estado;
+    *estadoRele = estado;
     digitalWrite(rele, HIGH);
   }
   else
   {
-    estadoRele = estado;
+    *estadoRele = estado;
     digitalWrite(rele, LOW);
   }
 }
@@ -329,30 +327,34 @@ void loop() {
       // SI LA TEMPERATURA ES MAYOR QUE EL UMBRAL PERMITIDO
       if (comprobarUmbralTemp(&temp1, &temp2, 0) && !alertaTemp)
       {
-        digitalWrite(rele1, HIGH);
-        estadoRele1 = true;
+        estadoRele(rele1,&estadoRele1,true);
+        //digitalWrite(rele1, HIGH);
+        //estadoRele1 = true;
         alertaTemp = true;
       }
       // HASTA QUE LA TEMPERATURA NO BAJE DEL UMBRAL + MARGEN RIEGO CONECTADO
       if (!comprobarUmbralTemp(&temp1, &temp2, 3) && alertaTemp)
       {
-        digitalWrite(rele1, LOW);
-        estadoRele1 = false;
+        estadoRele(rele1,&estadoRele1,false);
+        //digitalWrite(rele1, LOW);
+        //estadoRele1 = false;
         alertaTemp = false;
       }
       
         // SI LA TEMPERATURA ES MAYOR QUE EL UMBRAL PERMITIDO
       if (comprobarUmbralHum(&hum1, &hum2, 0) && !alertaHum)
       {
-        digitalWrite(rele2, HIGH);
-        estadoRele2 = true;
+        estadoRele(rele2,&estadoRele2,true);
+        //digitalWrite(rele2, HIGH);
+        //estadoRele2 = true;
         alertaHum = true;
       }
       // HASTA QUE LA TEMPERATURA NO BAJE DEL UMBRAL + MARGEN RIEGO CONECTADO
       if (!comprobarUmbralHum(&hum1, &hum2, 5) && alertaHum)
       {
-        digitalWrite(rele2, LOW);
-        estadoRele2 = false;
+        estadoRele(rele2,&estadoRele2,false);
+        //digitalWrite(rele2, LOW);
+        //estadoRele2 = false;
         alertaHum = false;
       }
    }
@@ -385,13 +387,13 @@ void loop() {
           client.println();*/
           if (mensaje.indexOf("/reles") != -1) {
             
-            if (mensaje.indexOf("/rele1") != -1) {
+            if (getEstadoManual() && mensaje.indexOf("/rele1") != -1) {
               if (mensaje.indexOf("/on") != -1) {
-                estadoRele(rele1,estadoRele1,true);
+                estadoRele(rele1,&estadoRele1,true);
                 //digitalWrite(rele1, HIGH);
                 //ºestadoRele1 = true;
               } else if (mensaje.indexOf("/off") != -1) {
-                estadoRele(rele1,estadoRele1,false);
+                estadoRele(rele1,&estadoRele1,false);
                 //digitalWrite(rele1, LOW);
                 //estadoRele1 = false;
               } 
@@ -405,12 +407,12 @@ void loop() {
               client.println("}");
               
             } else if (mensaje.indexOf("/rele2") != -1) {
-              if (mensaje.indexOf("/on") != -1) {
-                estadoRele(rele2,estadoRele2,true);
+              if (getEstadoManual() && mensaje.indexOf("/on") != -1) {
+                estadoRele(rele2,&estadoRele2,true);
                 //digitalWrite(rele2, HIGH);
                 //estadoRele2 = true;
               } else if (mensaje.indexOf("/off") != -1) {
-                estadoRele(rele2,estadoRele2,false);
+                estadoRele(rele2,&estadoRele2,false);
                 //digitalWrite(rele2, LOW);
                 //estadoRele2 = false;
               }
@@ -504,14 +506,25 @@ void loop() {
          {
            if (mensaje.indexOf("/set") != -1) 
            {
-            RTC.adjust(DateTime(__DATE__, __TIME__));
+             int i = mensaje.indexOf("/set");
+             String data = mensaje.substring((i+5),(i+19));
+             client.println(data);
+             /*
+             client.println(data.substring(0,4)); // AÑO
+             client.println(data.substring(4,6)); // MES
+             client.println(data.substring(6,8)); // DIA
+             client.println(data.substring(8,10));// HORA
+             client.println(data.substring(10,12));// MINUTOS
+             */
+            RTC.adjust( DateTime (data.substring(0,4).toInt(), data.substring(4,6).toInt(), data.substring(6,8).toInt(), data.substring(8,10).toInt(), data.substring(10,12).toInt(), data.substring(12,14).toInt())); 
+            //RTC.adjust(DateTime(__DATE__, __TIME__));
             delay(1000);
 
            }
             client.print("{\"time\": {");
             client.print("\"Fecha\":");
             client.print(now.year(), DEC); // Año
-            client.print('/');
+            client.print('/');  
             client.print(now.month(), DEC); // Mes
             client.print('/');
             client.print(now.day(), DEC); // Dia
