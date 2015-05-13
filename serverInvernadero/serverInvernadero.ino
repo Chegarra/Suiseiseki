@@ -113,6 +113,7 @@ void setup()
   lcd.begin(16, 2);
 }
 
+
 void resetearValoresLum(struct LUM *l)
 {
   l->lumMax = 0.0;
@@ -255,10 +256,38 @@ void estadoSistema(int rojo, int amarillo, int verde)
   {
     digitalWrite(rojo, HIGH);
   }
-
-      
-  
 }
+
+void estadoManual(boolean estado)
+{
+  if (estado)
+  {
+    modoManual = true;
+  }
+  else {
+    modoManual = false;
+    alertaTemp = false;
+    alertaHum = false;
+  }  
+}
+
+void estadoRele(int rele, boolean estadoRele, boolean estado)
+{
+  if (estado)
+  {
+    estadoRele = estado;
+    digitalWrite(rele, HIGH);
+  }
+  else
+  {
+    estadoRele = estado;
+    digitalWrite(rele, LOW);
+  }
+}
+    
+  
+  
+
 
 void loop() {
   DateTime now = RTC.now(); // Obtiene la fecha y hora del RTC
@@ -358,18 +387,13 @@ void loop() {
             
             if (mensaje.indexOf("/rele1") != -1) {
               if (mensaje.indexOf("/on") != -1) {
-                digitalWrite(rele1, HIGH);
-                estadoRele1 = true;
-                modoManual  =true;
+                estadoRele(rele1,estadoRele1,true);
+                //digitalWrite(rele1, HIGH);
+                //ºestadoRele1 = true;
               } else if (mensaje.indexOf("/off") != -1) {
-                digitalWrite(rele1, LOW);
-                estadoRele1 = false;
-                if (!estadoRele2)
-                {
-                  modoManual = false;
-                  alertaHum = false;
-                  alertaTemp = false;
-                }
+                estadoRele(rele1,estadoRele1,false);
+                //digitalWrite(rele1, LOW);
+                //estadoRele1 = false;
               } 
               
               client.print("{\"rele1\":");
@@ -382,18 +406,13 @@ void loop() {
               
             } else if (mensaje.indexOf("/rele2") != -1) {
               if (mensaje.indexOf("/on") != -1) {
-                digitalWrite(rele2, HIGH);
-                estadoRele2 = true;
-                modoManual=true;
+                estadoRele(rele2,estadoRele2,true);
+                //digitalWrite(rele2, HIGH);
+                //estadoRele2 = true;
               } else if (mensaje.indexOf("/off") != -1) {
-                digitalWrite(rele2, LOW);
-                estadoRele2 = false;
-                if (!estadoRele1)
-                {
-                  modoManual = false;
-                  alertaHum = false;
-                  alertaTemp = false;
-                }
+                estadoRele(rele2,estadoRele2,false);
+                //digitalWrite(rele2, LOW);
+                //estadoRele2 = false;
               }
               
               client.print("{\"rele2\":");
@@ -462,9 +481,24 @@ void loop() {
                   client.println("}}");                         
             }
           }
-         else if (mensaje.indexOf("/panic") != -1)
+         else if (mensaje.indexOf("/config") != -1)
          {
-           
+           if (mensaje.indexOf("/manual") != -1) {
+              if (mensaje.indexOf("/on") != -1) {
+                estadoManual(true);
+              } else if (mensaje.indexOf("/off") != -1) {
+                estadoManual(false);
+              } 
+              
+              client.print("{\"modoManual\":");
+              if (modoManual) {
+                client.print("\"ON\"");
+              } else {
+                client.print("\"OFF\"");
+              } 
+              client.println("}");
+              
+            }           
          }
          else if (mensaje.indexOf("/time") != -1)
          {
