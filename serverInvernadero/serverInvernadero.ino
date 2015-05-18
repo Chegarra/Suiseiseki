@@ -28,8 +28,8 @@ const float H_MAX = 50.00;
 //  CONSTANTES DE RIEGO
   // Fecha de Control
 
-const int HH = 11;
-const int MM = 45;
+const int HH = 10;
+const int MM = 30;
 
   // TEMPERATURA
 struct TEMP
@@ -387,8 +387,8 @@ void loop() {
           client.println();*/
           if (mensaje.indexOf("/reles") != -1) {
             
-            if (getEstadoManual() && mensaje.indexOf("/rele1") != -1) {
-              if (mensaje.indexOf("/on") != -1) {
+            if (mensaje.indexOf("/rele1") != -1) {
+              if (getEstadoManual() && mensaje.indexOf("/on") != -1) {
                 estadoRele(rele1,&estadoRele1,true);
                 //digitalWrite(rele1, HIGH);
                 //ºestadoRele1 = true;
@@ -473,13 +473,13 @@ void loop() {
             } else if (mensaje.indexOf("/hum2") != -1) {
                   client.print("{\"sensorHum2\": {");
                   client.print("\"humActual\":");
-                  client.print(hum1.humedadActual);
+                  client.print(hum2.humedadActual);
                   client.print(",");
                   client.print("\"humMax\":");
-                  client.print(hum1.humedadMax);
+                  client.print(hum2.humedadMax);
                   client.print(",");
                   client.print("\"humMin\":");
-                  client.print(hum1.humedadMin);
+                  client.print(hum2.humedadMin);
                   client.println("}}");                         
             }
           }

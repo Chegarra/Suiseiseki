@@ -306,7 +306,8 @@ function realizarAccion(mensaje) {
 			return;
 		}
 		//CONTROL MANUAL
-		var controlManual = objMensaje.controlmanual;
+		var controlManual = objMensaje.modoManual;
+		//var controlManual = objMensaje.controlmanual;
 		if (controlManual != null && controlManual != undefined) {
 			var etqEstadoControlManual = $("#estadoControlManual");
 			etqEstadoControlManual.removeClass("label-success");
@@ -315,14 +316,14 @@ function realizarAccion(mensaje) {
 				estadoControlManual = false;
 				etqEstadoControlManual.addClass("label-danger");
 				etqEstadoControlManual.text("Apagado");
-				//$('input[name="botonRiego"]').bootstrapSwitch('state', false, false);
+				//$("input[name='botonRiego']'".bootstrapSwitch('state', false, false);
 				$("[name='botonVentilacion']").bootstrapSwitch('disabled', true);
 				$("[name='botonRiego']").bootstrapSwitch('disabled', true);
 			} else if (controlManual == "ON") {
 				estadoControlManual = true;
 				etqEstadoControlManual.addClass("label-success");
 				etqEstadoControlManual.text("Activo");
-				//$('input[name="botonRiego"]').bootstrapSwitch('state', true, true);
+				//$("input[name='botonRiego']").bootstrapSwitch('state', true, true);
 				$("[name='botonVentilacion']").bootstrapSwitch('disabled', false);
 				$("[name='botonRiego']").bootstrapSwitch('disabled', false);
 			}
