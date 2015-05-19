@@ -522,20 +522,20 @@ void loop() {
 
            }
             client.print("{\"time\": {");
-            client.print("\"Fecha\":");
+            client.print("\"fecha\":\"");
             client.print(now.year(), DEC); // Año
             client.print('/');  
             client.print(now.month(), DEC); // Mes
             client.print('/');
             client.print(now.day(), DEC); // Dia
-            client.print(",");
-            client.print("\"Hora\":");
+            client.print("\",");
+            client.print("\"hora\":\"");
             client.print(now.hour(), DEC); // Horas
             client.print(':');
             client.print(now.minute(), DEC); // Minutos
             client.print(':');
             client.print(now.second(), DEC); // Segundos
-            client.println("}}"); 
+            client.println("\"}}"); 
           }
           else if (mensaje.indexOf("/status") != -1)
          {
